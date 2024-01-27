@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed Controler</title>
+    <!-- Include Plotly library -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Vehicle Speed Control </br> Simulation</h1>
+
+    <div class="container">
+        <!-- Left Column - Control Panel (Inputs) -->
+        <div class="left-column">
+            <div id="parameter-inputs">
+                <label for="horsepower">Horsepower:</label>
+                <input type="number" id="horsepower" value="{{ initial_data.horsepower }} "placeholder="Enter horsepower">
+
+                <label for="mass">Mass:</label>
+                <input type="number" id="mass" value="{{ initial_data.mass }}" placeholder="Enter mass">
+
+                <label for="length">Length:</label>
+                <input type="number" id="length" value="{{ initial_data.length }}" placeholder="Enter length">
+
+                <label for="width">Width:</label>
+                <input type="number" id="width" value="{{ initial_data.width }}" placeholder="Enter width">
+
+                <label for="height">Height:</label>
+                <input type="number" id="height" value="{{ initial_data.height }}" placeholder="Enter height">
+
+                <label for="speed">Speed:</label>
+                <div class="slider-container">
+                    <div class="speed-box">
+                        <input type="number" id="speed_value" value="{{ initial_data.speed }}">
+                    </div>
+                    <div class="speed-slider">
+                        <input type="range" id="speed" min="20" max="200" value="{{ initial_data.speed }}">
+                    </div>
+                </div>
+
+                <button onclick="updateData()">Update</button>
+            </div>
+        </div>
+
+         <!-- Right Column - Picture -->
+        <div class="right-column">
+            <img src="{{ url_for('static', filename='vehicle_picture.jpg') }}" alt="Vehicle Picture">
+        </div>
+    </div>
+
+    <!-- Plots div -->
+    <div id="plot-container">
+        <div id="plot1"></div>
+        <div id="plot2"></div>
+        <div id="plot3"></div>
+        <div id="plot4"></div>
+    </div>
+
+    <!-- Local .js file -->
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+</body>
+</html>
