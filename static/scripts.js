@@ -36,6 +36,51 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Show error messages under input fields
+    function displayErrorMessages(errors) {
+        // Remove existing error messages and styles
+        var existingErrorMessages = document.querySelectorAll('.error-message');
+        existingErrorMessages.forEach(function (element) {
+            element.remove();
+        });
+
+        // Display new error messages and apply error styles
+        errors.forEach(function (errorId) {
+            var inputField = document.getElementById(errorId);
+            if (inputField) {
+                var errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.textContent = getErrorMessage(errorId);
+
+                // Append error message directly after the input field
+                inputField.parentNode.insertBefore(errorMessage, inputField.nextSibling);
+
+                // Apply error style to the input field
+                applyErrorStyle(inputField);
+            }
+        });
+    }
+
+    // Get error messages based on input field id
+    function getErrorMessage(inputId) {
+        switch (inputId) {
+            case 'horsepower':
+                return "Please enter valid numerical values for horsepower (0 to 1817 [HP]).";
+            case 'mass':
+                return "Please enter valid numerical values for mass (0 to 20000 [kg]).";
+            case 'length':
+                return "Please enter valid numerical values for length (0 to 20 [m]).";
+            case 'width':
+                return "Please enter valid numerical values for width (0 to 5 [m]).";
+            case 'height':
+                return "Please enter valid numerical values for height (0 to 10 [m]).";
+            case 'speed':
+                return "Please enter a valid numerical value for speed (30 to 200 [km/h]).";
+            default:
+                return "Invalid input.";
+        }
+    }
+
     // Function to update data on click
     window.updateData = function () {
         // Read values from input boxes
@@ -61,49 +106,31 @@ document.addEventListener('DOMContentLoaded', function () {
                 case 'horsepower':
                     if (!isValidNumberWithinLimits(newParameters[key], 0, 1817)) {
                         invalidInputs.push(key);
-                        // applyErrorStyle(document.getElementById('horsepower'));
-                        // alert("Please enter valid numerical values for horsepower (0 to 1817 [HP]).");
-                        // return;
                     }
                     break;
                 case 'mass':
                     if (!isValidNumberWithinLimits(newParameters[key], 0, 20000)) {
                         invalidInputs.push(key);
-                        // applyErrorStyle(document.getElementById('mass'));
-                        // alert("Please enter valid numerical values for mass (0 to 20000 [kg]).");
-                        // return;
                     }
                     break;
                 case 'length':
                     if (!isValidNumberWithinLimits(newParameters[key], 0, 20)) {
                         invalidInputs.push(key);
-                        // applyErrorStyle(document.getElementById('length'));
-                        // alert("Please enter valid numerical values for length (0 to 20 [m]).");
-                        // return;
                     }
                     break;
                 case 'width':
                     if (!isValidNumberWithinLimits(newParameters[key], 0, 5)) {
                         invalidInputs.push(key);
-                        // applyErrorStyle(document.getElementById('width'));
-                        // alert("Please enter valid numerical values for width (0 to 5 [m]).");
-                        // return;
                     }
                     break;
                 case 'height':
                     if (!isValidNumberWithinLimits(newParameters[key], 0, 10)) {
                         invalidInputs.push(key);
-                        // applyErrorStyle(document.getElementById('height'));
-                        // alert("Please enter valid numerical values for height (0 to 10 [m]).");
-                        // return;
                     }
                     break;
                 case 'speed':
                     if (!isValidNumberWithinLimits(newParameters[key], 30, 200)) {
                         invalidInputs.push(key);
-                        // applyErrorStyle(document.getElementById('speed'));
-                        // alert("Please enter a valid numerical value for speed (30 to 200 [km/h]).");
-                        // return;
                     }
                     break;
                 default:
@@ -114,18 +141,16 @@ document.addEventListener('DOMContentLoaded', function () {
             removeErrorStyle(inputFieldIds);
         }
 
-        // Apply error styles to invalid inputs
-        invalidInputs.forEach(function (inputId) {
-            var inputField = document.getElementById(inputId);
-            if (inputField) {
-                applyErrorStyle(inputField);
-            }
-        });
-
-        // If there are invalid inputs, stop processing
+        // If there are invalid inputs, display error messages and stop processing
         if (invalidInputs.length > 0) {
+            displayErrorMessages(invalidInputs);
             return;
         }
+
+        // Remove error styles and messages if there are no invalid inputs
+        removeErrorStyle(inputFieldIds);
+        displayErrorMessages([]);
+
 
         // Send a POST request to update_data route
         fetch('/update_data', {
@@ -227,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var plot2 = {
             x: data.x,
-            y: data.y2,
+            y: data.y2.map(value => value * 100),
             type: 'scatter',
             mode: 'lines',
             name: 'Press',
@@ -238,14 +263,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var plot3 = {
             x: data.x,
-            // y: data.y3,
-            y: data.y3.map(value => value * 3.6),
+            y: data.y3,
+            //y: data.y3.map(value => value * 3.6),
             type: 'scatter',
             mode: 'lines',
             name: 'Velocity',
             title: 'Vehicle Velocity',
             xaxis: { title: 'time [s]' },
-            yaxis: { title: 'velocity [m/s]' },
+            yaxis: { title: 'velocity [km/h]' },
         };
 
         var plot4 = {
@@ -263,7 +288,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return [
             { traces: [plot1], layout: { ...layout, title: 'Controler Error', xaxis: { title: 'time [s]' }, yaxis: { title: 'error [m/s]' } } },
             { traces: [plot2], layout: { ...layout, title: 'Gas Pedal Pressure Level', xaxis: { title: 'time [s]' }, yaxis: { title: 'press level [%]' } } },
-            { traces: [plot3], layout: { ...layout, title: 'Vehicle Velocity', xaxis: { title: 'time [s]' }, yaxis: { title: 'velocity [m/s]' } } },
+            { traces: [plot3], layout: { ...layout, title: 'Vehicle Velocity', xaxis: { title: 'time [s]' }, yaxis: { title: 'velocity [km/h]' } } },
             { traces: [plot4], layout: { ...layout, title: 'Controler Fuzzy Logic Levels', xaxis: { title: 'x' }, yaxis: { title: 'y' } } },
         ];
     }
