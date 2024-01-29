@@ -16,6 +16,20 @@ document.addEventListener('DOMContentLoaded', function () {
             Plotly.newPlot('plot4', plots[3].traces, plots[3].layout);
         });
 
+
+    // Get the slider and the box
+    var sliderBar = document.getElementById('speed');
+    var sliderValue = document.getElementById('speed_value');
+
+    // Set slider initial value
+    sliderValue.innerHTML = sliderBar.value;
+
+    // Update the box value when the slider changes
+    sliderBar.addEventListener('input', function () {
+        sliderValue.innerHTML = this.value;
+    });
+
+
     // Function to validate input data
     function isValidNumberWithinLimits(value, min, max) {
         return !isNaN(value) && isFinite(value) && value >= min && value <= max;
@@ -164,10 +178,6 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(updatedData => {
             // Use Plotly to update the existing plots with the new data
             var updatedPlots = createPlots(updatedData);
-            // Plotly.react('plot1', [updatedPlots[0]]);
-            // Plotly.react('plot2', [updatedPlots[1]]);
-            // Plotly.react('plot3', [updatedPlots[2]]);
-            // Plotly.react('plot4', [updatedPlots[3]]);
 
             Plotly.react('plot1', updatedPlots[0].traces, updatedPlots[0].layout);
             Plotly.react('plot2', updatedPlots[1].traces, updatedPlots[1].layout);

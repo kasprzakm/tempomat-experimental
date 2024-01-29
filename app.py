@@ -52,7 +52,7 @@ initial_data = generate_data(**initial_parameters)
 # Routes
 @app.route('/')
 def index():
-    return render_template('index.html', initial_data=initial_data)
+    return render_template('index.html', initial_parameters=initial_parameters, initial_data=initial_data)
 
 @app.route('/initial_data')
 def get_initial_data():

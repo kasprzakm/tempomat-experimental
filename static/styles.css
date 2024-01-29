@@ -93,10 +93,13 @@ img {
 
 .speed-box {
     margin-right: 5px;
-}
-
-.speed-slider {
-    width: 100%;
+    width: 10%;
+    padding: 8px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
 #speed-value {
