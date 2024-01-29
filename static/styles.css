@@ -101,3 +101,7 @@ img {
   display: inline-block;
   margin-left: 5px;
 }
+
+.incorrect-input {
+    border: 2px solid red;
+}
