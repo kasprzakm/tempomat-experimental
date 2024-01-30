@@ -273,8 +273,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var plot3 = {
             x: data.x,
-            y: data.y3,
-            //y: data.y3.map(value => value * 3.6),
+            y: data.y3.map(value => value * 3.6),
             type: 'scatter',
             mode: 'lines',
             name: 'Velocity',

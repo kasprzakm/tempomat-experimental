@@ -1,6 +1,7 @@
 from math import sin, cos, radians, sqrt
 from numpy import linspace
 from simpful import FuzzySystem, LinguisticVariable, FuzzySet, Triangular_MF, Trapezoidal_MF  # fuzzy logic
+import matplotlib.pyplot as plt
 
 # TODO - consider using dict for different coefficients (e.g. friction (dry, wet, ice), drag (different cars))
 HORSEPOWER = 735  # 1 HP in [Nm/s]
@@ -12,8 +13,8 @@ INCLINATION = 0
 MINIMAL_VELOCITY = 8.3
 SAMPLING_TIME = 0.1
 GAIN = 0.05
-EXCEDING_TIME = 2.4
-DOUBLING_TIME = 0.41
+EXCEDING_TIME = 0.4
+DOUBLING_TIME = 0.4
 
 
 class Vehicle:
@@ -24,7 +25,7 @@ class Vehicle:
         self.horsepower = power
         self.wheel_radius = wheel_radius
         self.minimal_veocity = MINIMAL_VELOCITY
-        self.destined_velocity = destined_velocity
+        self.destined_velocity = destined_velocity / 3.6
         self.frontal_area = None
         self.maximal_acceleration = None
         self.fuzzy_system = None
@@ -44,6 +45,12 @@ class Vehicle:
         self.press = []
         self.error = []
         self.dynamics = []
+        ### ustawianie
+        self.static_error = [1]
+        self.sp = [0]
+        self.si = [0]
+        #self.sd = []
+        
 
     # utils
     def normalize(self, press, minimum=0.0) -> float:
@@ -139,7 +146,7 @@ class Vehicle:
         self.fuzzy_system._variables["Pedal_press"] = self.press[-1]
 
     def calc_frontal_area(self) -> None:
-        self.frontal_area = round(self.dims[0] * self.dims[2], 2)
+        self.frontal_area = round(self.dims[1] * self.dims[2], 2)
 
     def calc_max_accleration(self) -> None:
         self.maximal_acceleration = sqrt((self.horsepower * HORSEPOWER) / (2 * self.mass))
@@ -173,13 +180,13 @@ class Vehicle:
     # controler error
     def calc_control(self):
         p = self.error[-1]
-        i = self.sampling_time / self.exceding_time * sum(self.error)
+        i = self. sampling_time / self.exceding_time * sum(self.error)
         d = self.doubling_time / self.sampling_time * (self.error[-1] - self.error[-2])
         # print(f"step: {self.step}, P: {p}, I: {i}, D: {d}")
         self.step += 1
         return (self.controler_gain * (p + i + d))
-
-        # calculate forces
+        
+    # calculate forces
 
     def calc_weight(self) -> float:
         return self.mass * GRAVITY_COEFF * sin(radians(INCLINATION))
@@ -206,21 +213,23 @@ class Vehicle:
         self.initialize_state()
         self.initialize_fuzzy_system()
         if self.run:
-            while abs(round(self.velocity[-1], 1) - self.destined_velocity) > 0.01:
+            for _ in range(self.iterations):
+                if abs(round(self.velocity[-1], 1) - self.destined_velocity) < 0.01:
+                    print(f"car reached desire velocity at {self.time[-1]}")
                 self.time.append(round(self.time[-1] + self.sampling_time, 2))
                 self.error.append(self.destined_velocity - self.velocity[-1])
-                self.press.append(
-                    self.normalize(self.calc_control() / self.destined_velocity, self.calc_minimal_press()))
+                self.press.append(self.normalize(self.calc_control() / self.destined_velocity, self.calc_minimal_press()))
                 self.velocity.append(self.get_valid_acceleration() + self.velocity[-1])
                 self.update_fuzzy_variables()
 
 
-# if __name__ == "__main__":
-#     w = Vehicle(1100, [1.94, 4.06, 1.43], 102, 0.28, 20, 1000)
-#     w.main_loop()
-#
-#     print(f"time: {w.time}")
-#     print(f"error: {w.error}")
-#     print(f"press: {w.press}")
-#     print(f"velocity: {w.velocity}")
-#     print(f"fuzzy accel: {w.dynamics}")
+#if __name__ == "__main__":
+#    w = Vehicle(1100, [4.06, 1.94, 1.43], 102, 0.28, 50, 20)
+#    w.main_loop()
+#    w.get_plot()
+#    
+#    print(f"time: {w.time}")
+#    print(f"error: {w.error}")
+#    print(f"press: {w.press}")
+#    print(f"velocity: {w.velocity}")
+#    print(f"fuzzy accel: {w.dynamics}")

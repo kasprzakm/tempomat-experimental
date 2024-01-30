@@ -12,7 +12,7 @@ initial_parameters = {
     'width': 1.9,
     'length': 4,
     'height': 1.2,
-    'speed': 20
+    'speed': 50
 }
 
 # Generic test data generator
@@ -26,7 +26,7 @@ def generate_data(horsepower, mass, width, length, height, speed):
     print(horsepower, mass, width, height, length, speed)
 
     # Initializing object constructor based on prepared module
-    v = Vehicle(mass, [width, length, height], horsepower, 0.28, speed, 1000)
+    v = Vehicle(mass, [width, length, height], horsepower, 0.28, speed, 90)
 
     # test_dimensions = tuple([1.94, 4.06, 1.43])
     # v = Vehicle(1100, test_dimensions, 102, 0.28, 20, 1000)
@@ -56,6 +56,7 @@ def index():
 
 @app.route('/initial_data')
 def get_initial_data():
+    print(f"json: {jsonify(initial_data)}")
     return jsonify(initial_data)
 
 @app.route('/update_data', methods=['POST'])
