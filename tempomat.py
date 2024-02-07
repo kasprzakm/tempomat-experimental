@@ -156,13 +156,15 @@ class Vehicle:
                                            (self.error_v['P'] & self.error_sum_v['Z'])    | #dobrze
                                            (self.error_v['P'] & self.error_sum_v['P'])    | #dobrze
                                            (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BN']   |
-                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['N']   |
-                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BP']),
+                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['N']    |
+                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BP']   |
+                                           (self.error_v['P'] & self.error_sum_v['BP'])  |  #dobrze
+                                           (self.error_v['BP'] & self.error_sum_v['P'])     # może trzeba będzie rozbić z deltą: BN, P, BP
+                                           ),
                                consequent=self.accel['P'], label='rule P'))
         
-        self.rules.append(Rule(antecedent=((self.error_v['P'] & self.error_sum_v['BP'])   | #dobrze
-                                           (self.error_v['BP'] & self.error_sum_v['Z'])   | #może trzeba będzie rozbić z deltą: BN, N, P, BP
-                                           (self.error_v['BP'] & self.error_sum_v['P'])   | #może trzeba będzie rozbić z deltą: BN, P, BP
+        self.rules.append(Rule(antecedent=((self.error_v['BP'] & self.error_sum_v['Z'])   | #może trzeba będzie rozbić z deltą: BN, N, P, BP
+
                                            (self.error_v['BP'] & self.error_sum_v['BP'])),  #dobrze
                                consequent=self.accel['BP'], label='rule BP'))
 

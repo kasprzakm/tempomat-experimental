@@ -284,13 +284,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var plot4 = {
             x: data.x,
-            y: data.y4,
+            y: data.y4.map(value => value * 3.6),
             type: 'scatter',
             mode: 'lines',
             name: 'Fuzzy',
             title: 'Controler Fuzzy Logic Levels',
-            xaxis: { title: 'x' },
-            yaxis: { title: 'y' },
+            xaxis: { title: 'time [s]' },
+            yaxis: { title: 'velocity [km/h]' },
         };
 
         // return [plot1, plot2, plot3, plot4];
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
             { traces: [plot1], layout: { ...layout, title: 'Controler Error', xaxis: { title: 'time [s]' }, yaxis: { title: 'error [m/s]' } } },
             { traces: [plot2], layout: { ...layout, title: 'Gas Pedal Pressure Level', xaxis: { title: 'time [s]' }, yaxis: { title: 'press level [%]' } } },
             { traces: [plot3], layout: { ...layout, title: 'Vehicle Velocity', xaxis: { title: 'time [s]' }, yaxis: { title: 'velocity [km/h]' } } },
-            { traces: [plot4], layout: { ...layout, title: 'Controler Fuzzy Logic Levels', xaxis: { title: 'x' }, yaxis: { title: 'y' } } },
+            { traces: [plot4], layout: { ...layout, title: 'Controler Fuzzy Logic Levels', xaxis: { title: 'time [s]' }, yaxis: { title: 'velocity [km/h]' } } },
         ];
     }
 });
