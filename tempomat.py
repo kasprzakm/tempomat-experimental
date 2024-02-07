@@ -1,6 +1,8 @@
 from math import sin, cos, radians, sqrt
 from numpy import linspace
-from simpful import FuzzySystem, LinguisticVariable, FuzzySet, Triangular_MF, Trapezoidal_MF  # fuzzy logic
+# from simpful import FuzzySystem, LinguisticVariable, FuzzySet, Triangular_MF, Trapezoidal_MF  # fuzzy logic
+from skfuzzy.control import Antecedent, Consequent, Rule, ControlSystem, ControlSystemSimulation
+from skfuzzy.fuzzymath import fuzzy_ops
 import matplotlib.pyplot as plt
 
 # TODO - consider using dict for different coefficients (e.g. friction (dry, wet, ice), drag (different cars))
@@ -14,7 +16,7 @@ MINIMAL_VELOCITY = 8.3
 SAMPLING_TIME = 0.1
 GAIN = 0.05
 EXCEDING_TIME = 0.4
-DOUBLING_TIME = 0.4
+DOUBLING_TIME = 0.44
 
 
 class Vehicle:
@@ -32,6 +34,11 @@ class Vehicle:
         self.linguistic_variables = None
         self.rules = None
         self.step = 0
+        self.error_v = None
+        self.error_sum_v = None
+        self.error_delta_v = None
+        self.accel = None
+        self.simulation = None
 
         self.run = True
         self.runtime = runtime
@@ -45,12 +52,12 @@ class Vehicle:
         self.press = []
         self.error = []
         self.dynamics = []
+        self.acceleration = [0]
         ### ustawianie
-        self.static_error = [1]
         self.sp = [0]
         self.si = [0]
-        #self.sd = []
-        
+        self.sd = [self.destined_velocity - self.minimal_veocity]
+        self.fuzzy_velocity =[]
 
     # utils
     def normalize(self, press, minimum=0.0) -> float:
@@ -78,72 +85,95 @@ class Vehicle:
 
     # set initial values for vehicle
     def initialize_fuzzy_system(self) -> None:
-        self.fuzzy_system = FuzzySystem()
-
+        self.linguistic_variables = ["BN", "N", "Z", "P", "BP"]
+        
         self.define_error_variable()
-        self.define_press_variable()
+        self.define_error_sum_variable()
+        self.define_error_delta_variable()
         self.define_acceleration_variable()
 
         self.define_rules()
 
-        self.fuzzy_system.set_variable("Err_value", self.error[-1])
-        self.fuzzy_system.set_variable("Pedal_press", self.press[-1])
+        self.fuzzy_system = ControlSystem(rules=self.rules)
+        self.simulation = ControlSystemSimulation(self.fuzzy_system)
 
     def define_error_variable(self) -> None:
-        maximum = (self.destined_velocity - self.minimal_veocity) * 3.6
-        steps = linspace(maximum, -maximum / 4, 5)
+        maximum = (self.destined_velocity - self.minimal_veocity)
+        universe = linspace(-maximum, maximum, len(self.linguistic_variables))
 
-        high = FuzzySet(function=Trapezoidal_MF(steps[4], steps[4], steps[3], steps[2]), term="low")
-        medium = FuzzySet(
-            function=Trapezoidal_MF(steps[3], (steps[3] + steps[2]) / 2, (steps[2] + steps[1]) / 2, steps[1]),
-            term="medium")
-        low = FuzzySet(function=Trapezoidal_MF(steps[2], steps[1], steps[0], steps[0]), term="high")
-        # print(low.get_value_fast('Err_value'))
-        self.fuzzy_system.add_linguistic_variable("Err_value", LinguisticVariable([high, medium, low],
-                                                                                  universe_of_discourse=[maximum,
-                                                                                                         -maximum / 4]))
+        self.error_v = Antecedent(universe, "error")
+        self.error_v.automf(names=self.linguistic_variables)
 
-    def define_press_variable(self) -> None:
-        low = FuzzySet(function=Triangular_MF(0.0, 0.25, 0.5), term="low")
-        medium = FuzzySet(function=Triangular_MF(0.25, 0.5, 0.75), term="medium")
-        high = FuzzySet(function=Trapezoidal_MF(0.5, 0.75, 1.0, 1.0), term="high")
-        self.fuzzy_system.add_linguistic_variable("Pedal_press", LinguisticVariable([low, medium, high],
-                                                                                    universe_of_discourse=[0.0, 1.0]))
+    def define_error_sum_variable(self) -> None:
+        maximum = max(self.si[1:])
+        universe = linspace(-maximum, maximum, len(self.linguistic_variables))
+        
+        self.error_sum_v = Antecedent(universe, "error_sum")
+        self.error_sum_v.automf(names=self.linguistic_variables) 
 
+    def define_error_delta_variable(self) -> None:
+        maximum = max(abs(x) for x in self.sd[1:])
+        universe = linspace(-maximum, maximum, len(self.linguistic_variables))
+        
+        self.error_delta_v = Antecedent(universe, "error_delta")
+        self.error_delta_v.automf(names=self.linguistic_variables) 
+    
     def define_acceleration_variable(self) -> None:
-        steps = linspace(-self.maximal_acceleration, self.maximal_acceleration, 7)
+        universe = linspace(-self.maximal_acceleration, self.maximal_acceleration, len(self.linguistic_variables))
 
-        high_negative = FuzzySet(function=Trapezoidal_MF(steps[0], steps[0], steps[1], steps[2]), term="high_negative")
-        average_negative = FuzzySet(function=Triangular_MF(steps[1], steps[2], steps[3]), term="average_negative")
-        low_neutral = FuzzySet(function=Triangular_MF(steps[2], steps[3], steps[4]), term="low_neutral")
-        average_positive = FuzzySet(function=Triangular_MF(steps[3], steps[4], steps[5]), term="average_positive")
-        high_positive = FuzzySet(function=Trapezoidal_MF(steps[4], steps[5], steps[6], steps[6]), term="high_positive")
-        self.fuzzy_system.add_linguistic_variable("Acceleration", LinguisticVariable(
-            [high_negative, average_negative, low_neutral, average_positive, high_positive],
-            universe_of_discourse=[-self.maximal_acceleration, self.maximal_acceleration]))
+        self.accel = Consequent(universe, "acceleration")
+        self.accel.automf(names=self.linguistic_variables)   
 
     def define_rules(self) -> None:
         self.rules = []
-        self.rules.append("IF (Err_value IS high) AND ( Pedal_press IS high) THEN (Acceleration IS high_positive))")
-        self.rules.append(
-            "IF (Err_value IS high) AND ( Pedal_press IS medium) THEN (Acceleration IS average_positive))")
-        self.rules.append("IF (Err_value IS high) AND ( Pedal_press IS low) THEN (Acceleration IS high_negative))")
-        self.rules.append(
-            "IF (Err_value IS medium) AND ( Pedal_press IS high) THEN (Acceleration IS average_positive))")
-        self.rules.append(
-            "IF (Err_value IS medium) AND ( Pedal_press IS medium) THEN (Acceleration IS average_positive))")
-        self.rules.append("IF (Err_value IS medium) AND ( Pedal_press IS low) THEN (Acceleration IS average_negative))")
-        self.rules.append("IF (Err_value IS low) AND ( Pedal_press IS high) THEN (Acceleration IS high_positive))")
-        self.rules.append("IF (Err_value IS low) AND ( Pedal_press IS medium) THEN (Acceleration IS average_positive))")
-        self.rules.append("IF (Err_value IS low) AND ( Pedal_press IS low) THEN (Acceleration IS low_neutral))")
-        self.fuzzy_system.add_rules(self.rules)
+        self.rules.append(Rule(antecedent=((self.error_v['BN'] & self.error_sum_v['BN']) |  #dobrze
+                                           (self.error_v['BN'] & self.error_sum_v['N'])  |  #dobrze
+                                           (self.error_v['N'] & self.error_sum_v['BN'])  |  #może trzeba będzie rozbić z deltą: BN, N, P, BP
+                                           (self.error_v['Z'] & self.error_sum_v['BN'])),   #może trzeba będzie rozbić z deltą: BN, Z, P, BP (?)
+                               consequent=self.accel['BN'], label='rule BN'))
+        
+        self.rules.append(Rule(antecedent=((self.error_v['N'] & self.error_sum_v['N'])  |  #na 99% dobrze 
+                                           (self.error_v['Z'] & self.error_sum_v['N'])  |  #na 99% dobrze
+                                           (self.error_v['P'] & self.error_sum_v['BN'])),  #może trzeba będzie rozbić z deltą: BN, Z, P, BP (?)                                         
+                               consequent=self.accel['N'], label='rule N'))
+        
+        self.rules.append(Rule(antecedent=((self.error_v['BN'] & self.error_sum_v['Z'])   | #może trzeba będzie rozbić z deltą: BN, Z, P, BP
+                                           (self.error_v['BN'] & self.error_sum_v['P'])   | #może trzeba będzie rozbić z deltą: BN, P, BP
+                                           (self.error_v['BN'] & self.error_sum_v['BP'])  | #może trzeba będzie rozbić z deltą: BN, Z, P, BP
+                                           (self.error_v['N'] & self.error_sum_v['Z'])    | #może trzeba będzie rozbić z deltą: BN, Z, BP
+                                           (self.error_v['P'] & self.error_sum_v['N'])    | #może trzeba będzie rozbić z deltą: BN, Z, BP
+                                           (self.error_v['BP'] & self.error_sum_v['BN'])  | #dobrze
+                                           (self.error_v['BP'] & self.error_sum_v['N'] & self.error_delta_v['Z'])  |
+                                           (self.error_v['BP'] & self.error_sum_v['N'] & self.error_delta_v['P'])),   
+                               consequent=self.accel['Z'], label='rule Z'))
+        
+        self.rules.append(Rule(antecedent=((self.error_v['N'] & self.error_sum_v['P'])    | #może trzeba będzie rozbić z deltą: BN, N, Z, BP
+                                           (self.error_v['N'] & self.error_sum_v['BP'])   | #może trzeba będzie rozbić z deltą: BN, BP (?)
+                                           (self.error_v['Z'] & self.error_sum_v['Z'])    | #dobrze
+                                           (self.error_v['Z'] & self.error_sum_v['P'])    | #dobrze
+                                           (self.error_v['Z'] & self.error_sum_v['BP'])   | #może trzeba będzie rozbić z deltą: BN, Z, P, BP 
+                                           (self.error_v['P'] & self.error_sum_v['Z'])    | #dobrze
+                                           (self.error_v['P'] & self.error_sum_v['P'])    | #dobrze  
+                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BN']   | 
+                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['N']   |
+                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BP']),           
+                               consequent=self.accel['P'], label='rule P'))
+        
+        self.rules.append(Rule(antecedent=((self.error_v['P'] & self.error_sum_v['BP'])   | #dobrze
+                                           (self.error_v['BP'] & self.error_sum_v['Z'])   | #może trzeba będzie rozbić z deltą: BN, N, P, BP
+                                           (self.error_v['BP'] & self.error_sum_v['P'])   | #może trzeba będzie rozbić z deltą: BN, P, BP
+                                           (self.error_v['BP'] & self.error_sum_v['BP'])),  #dobrze
+                               consequent=self.accel['BP'], label='rule BP'))
 
     def update_fuzzy_variables(self) -> None:
-        accel = self.fuzzy_system.inference()
-        self.dynamics.append(accel["Acceleration"])
-
-        self.fuzzy_system._variables["Err_value"] = self.error[-1]
-        self.fuzzy_system._variables["Pedal_press"] = self.press[-1]
+        for i in range(1, len(self.error)):
+            self.simulation.input['error'] = self.sp[i]
+            self.simulation.input['error_sum'] = self.si[i]
+            self.simulation.input['error_delta'] = self.sd[i]
+            self.simulation.compute()
+            
+            self.dynamics.append(self.simulation.output['acceleration'])
+            self.fuzzy_velocity.append(self.fuzzy_velocity[-1] + self.dynamics[-1])
 
     def calc_frontal_area(self) -> None:
         self.frontal_area = round(self.dims[1] * self.dims[2], 2)
@@ -174,17 +204,21 @@ class Vehicle:
             self.calc_max_accleration()
             self.time.append(0.0)
             self.velocity.append(self.minimal_veocity)
+            self.fuzzy_velocity.append(self.minimal_veocity)
             self.set_press()
             self.error.append(self.destined_velocity - self.velocity[-1])
 
-    # controler error
+    # controller error
     def calc_control(self):
         p = self.error[-1]
         i = self. sampling_time / self.exceding_time * sum(self.error)
         d = self.doubling_time / self.sampling_time * (self.error[-1] - self.error[-2])
+        self.sp.append(p)
+        self.si.append(i)
+        self.sd.append(d)
         # print(f"step: {self.step}, P: {p}, I: {i}, D: {d}")
         self.step += 1
-        return (self.controler_gain * (p + i + d))
+        return self.controler_gain * (p + i + d)
         
     # calculate forces
 
@@ -206,12 +240,25 @@ class Vehicle:
 
     def get_valid_acceleration(self) -> float:
         # print(f"acel: {max(-self.maximal_acceleration, min(self.calc_resultant_force() / self.mass, self.maximal_acceleration))}")
+        self.acceleration.append(max(-self.maximal_acceleration, min(self.calc_resultant_force() / self.mass, self.maximal_acceleration)))
         return max(-self.maximal_acceleration, min(self.calc_resultant_force() / self.mass, self.maximal_acceleration))
+    
+    def get_plot(self):
+        plt.subplot(2, 1, 1)
+        plt.plot(self.time, self.sp, label='P')
+        plt.plot(self.time, self.si, label='I')
+        plt.plot(self.time, self.sd, label='D')
+        plt.legend()
+        
+        plt.subplot(2, 1, 2)
+        plt.plot(self.time, self.velocity, label='vel')
+        #plt.plot(self.time, self.fuzzy_velocity, label='fuzzy')
+        plt.legend()
+        plt.show()
 
     # main loop
     def main_loop(self):
         self.initialize_state()
-        self.initialize_fuzzy_system()
         if self.run:
             for _ in range(self.iterations):
                 if abs(round(self.velocity[-1], 1) - self.destined_velocity) < 0.01:
@@ -220,14 +267,24 @@ class Vehicle:
                 self.error.append(self.destined_velocity - self.velocity[-1])
                 self.press.append(self.normalize(self.calc_control() / self.destined_velocity, self.calc_minimal_press()))
                 self.velocity.append(self.get_valid_acceleration() + self.velocity[-1])
-                self.update_fuzzy_variables()
+        self.initialize_fuzzy_system()
+        self.update_fuzzy_variables()
+        
 
 
-#if __name__ == "__main__":
-#    w = Vehicle(1100, [4.06, 1.94, 1.43], 102, 0.28, 50, 20)
-#    w.main_loop()
-#    w.get_plot()
-#    
+if __name__ == "__main__":
+    w = Vehicle(1100, [4.06, 1.94, 1.43], 102, 0.28, 72, 20)
+    w.main_loop()
+    w.get_plot()
+    #f= open("zmienne.txt", "w")
+    #for i in range(len(w.acceleration)):
+    #    f.write(f"{w.acceleration[i]};{w.sp[i]};{w.si[i]};{w.sd[i]}\n")
+        
+"""     print(f"press: {}")
+    print(f"P: {}")
+    print(f"I: {}")
+    print(f"D: {}") """
+    
 #    print(f"time: {w.time}")
 #    print(f"error: {w.error}")
 #    print(f"press: {w.press}")
