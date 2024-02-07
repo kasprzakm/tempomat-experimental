@@ -51,7 +51,7 @@ class Vehicle:
         self.velocity = []
         self.press = []
         self.error = []
-        self.dynamics = []
+        self.dynamics = [0]
         self.acceleration = [0]
         ### ustawianie
         self.sp = [0]
@@ -109,20 +109,21 @@ class Vehicle:
         universe = linspace(-maximum, maximum, len(self.linguistic_variables))
         
         self.error_sum_v = Antecedent(universe, "error_sum")
-        self.error_sum_v.automf(names=self.linguistic_variables) 
+        self.error_sum_v.automf(names=self.linguistic_variables)
 
     def define_error_delta_variable(self) -> None:
         maximum = max(abs(x) for x in self.sd[1:])
         universe = linspace(-maximum, maximum, len(self.linguistic_variables))
         
         self.error_delta_v = Antecedent(universe, "error_delta")
-        self.error_delta_v.automf(names=self.linguistic_variables) 
+        self.error_delta_v.automf(names=self.linguistic_variables)
     
     def define_acceleration_variable(self) -> None:
-        universe = linspace(-self.maximal_acceleration, self.maximal_acceleration, len(self.linguistic_variables))
+        maximum = max(abs(x) for x in self.acceleration)
+        universe = linspace(-maximum, maximum, len(self.linguistic_variables))
 
         self.accel = Consequent(universe, "acceleration")
-        self.accel.automf(names=self.linguistic_variables)   
+        self.accel.automf(names=self.linguistic_variables)
 
     def define_rules(self) -> None:
         self.rules = []
@@ -141,22 +142,22 @@ class Vehicle:
                                            (self.error_v['BN'] & self.error_sum_v['P'])   | #może trzeba będzie rozbić z deltą: BN, P, BP
                                            (self.error_v['BN'] & self.error_sum_v['BP'])  | #może trzeba będzie rozbić z deltą: BN, Z, P, BP
                                            (self.error_v['N'] & self.error_sum_v['Z'])    | #może trzeba będzie rozbić z deltą: BN, Z, BP
+                                           (self.error_v['Z'] & self.error_sum_v['Z'])    | #dobrze
+                                           (self.error_v['Z'] & self.error_sum_v['P'])    |  # dobrze
                                            (self.error_v['P'] & self.error_sum_v['N'])    | #może trzeba będzie rozbić z deltą: BN, Z, BP
                                            (self.error_v['BP'] & self.error_sum_v['BN'])  | #dobrze
                                            (self.error_v['BP'] & self.error_sum_v['N'] & self.error_delta_v['Z'])  |
-                                           (self.error_v['BP'] & self.error_sum_v['N'] & self.error_delta_v['P'])),   
+                                           (self.error_v['BP'] & self.error_sum_v['N'] & self.error_delta_v['P'])),
                                consequent=self.accel['Z'], label='rule Z'))
         
         self.rules.append(Rule(antecedent=((self.error_v['N'] & self.error_sum_v['P'])    | #może trzeba będzie rozbić z deltą: BN, N, Z, BP
                                            (self.error_v['N'] & self.error_sum_v['BP'])   | #może trzeba będzie rozbić z deltą: BN, BP (?)
-                                           (self.error_v['Z'] & self.error_sum_v['Z'])    | #dobrze
-                                           (self.error_v['Z'] & self.error_sum_v['P'])    | #dobrze
-                                           (self.error_v['Z'] & self.error_sum_v['BP'])   | #może trzeba będzie rozbić z deltą: BN, Z, P, BP 
+                                           (self.error_v['Z'] & self.error_sum_v['BP'] & self.error_delta_v['BN'])   | #może trzeba będzie rozbić z deltą: BN, Z, P, BP
                                            (self.error_v['P'] & self.error_sum_v['Z'])    | #dobrze
-                                           (self.error_v['P'] & self.error_sum_v['P'])    | #dobrze  
-                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BN']   | 
+                                           (self.error_v['P'] & self.error_sum_v['P'])    | #dobrze
+                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BN']   |
                                            (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['N']   |
-                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BP']),           
+                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BP']),
                                consequent=self.accel['P'], label='rule P'))
         
         self.rules.append(Rule(antecedent=((self.error_v['P'] & self.error_sum_v['BP'])   | #dobrze
@@ -251,8 +252,8 @@ class Vehicle:
         plt.legend()
         
         plt.subplot(2, 1, 2)
-        plt.plot(self.time, self.velocity, label='vel')
-        #plt.plot(self.time, self.fuzzy_velocity, label='fuzzy')
+        plt.plot(self.time, self.fuzzy_velocity, label='fuzzy')
+        plt.plot(self.time, self.velocity, label='accel')
         plt.legend()
         plt.show()
 
@@ -273,7 +274,7 @@ class Vehicle:
 
 
 if __name__ == "__main__":
-    w = Vehicle(1100, [4.06, 1.94, 1.43], 102, 0.28, 72, 20)
+    w = Vehicle(1100, [4.06, 1.94, 1.43], 72, 0.28, 72, 20)
     w.main_loop()
     w.get_plot()
     #f= open("zmienne.txt", "w")
