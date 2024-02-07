@@ -39,9 +39,9 @@ def generate_data(horsepower, mass, width, length, height, speed):
     print('controler error:', v.error[0], '|', v.error[-1], '|', len(v.error))
     print('press level:', v.press[0], '|', v.press[-1], '|', len(v.press))
     print('velocity:', v.velocity[0], '|', v.velocity[-1], '|', len(v.velocity))
-    print('fuzzy samples:', v.dynamics[0], '|', v.velocity[-1], '|', len(v.dynamics))
+    print('fuzzy samples:', v.fuzzy_velocity[0], '|', v.velocity[-1], '|', len(v.fuzzy_velocity))
 
-    return {'x': v.time, 'y1': v.error, 'y2': v.press, 'y3': v.velocity, 'y4': v.dynamics}
+    return {'x': v.time, 'y1': v.error, 'y2': v.press, 'y3': v.velocity, 'y4': v.fuzzy_velocity}
 
 
 # Default data initializer
