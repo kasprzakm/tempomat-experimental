@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Weight plot
         var plot4a = {
             x: data.x,
-            y: data.y3,
+            y: data.y6,
             type: 'scatter',
             mode: 'lines',
             name: 'Ciężar',
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Friction plot
         var plot4b = {
             x: data.x,
-            y: data.y3,
+            y: data.y7,
             type: 'scatter',
             mode: 'lines',
             name: 'Tarcie',
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Air drag force plot
         var plot4c = {
             x: data.x,
-            y: data.y3,
+            y: data.y8,
             type: 'scatter',
             mode: 'lines',
             name: 'Siła ciągu powietrza',
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Driving force plot
         var plot4d = {
             x: data.x,
-            y: data.y3,
+            y: data.y9,
             type: 'scatter',
             mode: 'lines',
             name: 'Siła ciągu silnika',
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Resultant force plot
         var plot4e = {
             x: data.x,
-            y: data.y3,
+            y: data.y10,
             type: 'scatter',
             mode: 'lines',
             name: 'Siła wypadkowa',

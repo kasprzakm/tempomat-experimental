@@ -26,7 +26,7 @@ class Vehicle:
         self.dims = dims
         self.horsepower = power
         self.wheel_radius = wheel_radius
-        self.minimal_veocity = MINIMAL_VELOCITY
+        self.minimal_velocity = MINIMAL_VELOCITY
         self.destined_velocity = destined_velocity / 3.6
         self.frontal_area = None
         self.maximal_acceleration = None
@@ -53,11 +53,18 @@ class Vehicle:
         self.error = []
         self.dynamics = [0]
         self.acceleration = [0]
+        # forces
+        self.weight = []
+        self.friction = []
+        self.air_drag_force = []
+        self.driving_force = []
+        self.resultant_force = []
+
         ### ustawianie
         self.sp = [0]
         self.si = [0]
-        self.sd = [self.destined_velocity - self.minimal_veocity]
-        self.fuzzy_velocity =[]
+        self.sd = [self.destined_velocity - self.minimal_velocity]
+        self.fuzzy_velocity = []
 
     # utils
     def normalize(self, press, minimum=0.0) -> float:
@@ -86,7 +93,7 @@ class Vehicle:
     # set initial values for vehicle
     def initialize_fuzzy_system(self) -> None:
         self.linguistic_variables = ["BN", "N", "Z", "P", "BP"]
-        
+
         self.define_error_variable()
         self.define_error_sum_variable()
         self.define_error_delta_variable()
@@ -98,7 +105,7 @@ class Vehicle:
         self.simulation = ControlSystemSimulation(self.fuzzy_system)
 
     def define_error_variable(self) -> None:
-        maximum = (self.destined_velocity - self.minimal_veocity)
+        maximum = (self.destined_velocity - self.minimal_velocity)
         universe = linspace(-maximum, maximum, len(self.linguistic_variables))
 
         self.error_v = Antecedent(universe, "error")
@@ -107,17 +114,17 @@ class Vehicle:
     def define_error_sum_variable(self) -> None:
         maximum = max(self.si[1:])
         universe = linspace(-maximum, maximum, len(self.linguistic_variables))
-        
+
         self.error_sum_v = Antecedent(universe, "error_sum")
         self.error_sum_v.automf(names=self.linguistic_variables)
 
     def define_error_delta_variable(self) -> None:
         maximum = max(abs(x) for x in self.sd[1:])
         universe = linspace(-maximum, maximum, len(self.linguistic_variables))
-        
+
         self.error_delta_v = Antecedent(universe, "error_delta")
         self.error_delta_v.automf(names=self.linguistic_variables)
-    
+
     def define_acceleration_variable(self) -> None:
         maximum = max(abs(x) for x in self.acceleration)
         universe = linspace(-maximum, maximum, len(self.linguistic_variables))
@@ -127,45 +134,52 @@ class Vehicle:
 
     def define_rules(self) -> None:
         self.rules = []
-        self.rules.append(Rule(antecedent=((self.error_v['BN'] & self.error_sum_v['BN']) |  #dobrze
-                                           (self.error_v['BN'] & self.error_sum_v['N'])  |  #dobrze
-                                           (self.error_v['N'] & self.error_sum_v['BN'])  |  #może trzeba będzie rozbić z deltą: BN, N, P, BP
-                                           (self.error_v['Z'] & self.error_sum_v['BN'])),   #może trzeba będzie rozbić z deltą: BN, Z, P, BP (?)
+        self.rules.append(Rule(antecedent=((self.error_v['BN'] & self.error_sum_v['BN']) |  # dobrze
+                                           (self.error_v['BN'] & self.error_sum_v['N']) |  # dobrze
+                                           (self.error_v['N'] & self.error_sum_v[
+                                               'BN']) |  # może trzeba będzie rozbić z deltą: BN, N, P, BP
+                                           (self.error_v['Z'] & self.error_sum_v['BN'])),
+                               # może trzeba będzie rozbić z deltą: BN, Z, P, BP (?)
                                consequent=self.accel['BN'], label='rule BN'))
-        
-        self.rules.append(Rule(antecedent=((self.error_v['N'] & self.error_sum_v['N'])  |  #na 99% dobrze 
-                                           (self.error_v['Z'] & self.error_sum_v['N'])  |  #na 99% dobrze
-                                           (self.error_v['P'] & self.error_sum_v['BN'])),  #może trzeba będzie rozbić z deltą: BN, Z, P, BP (?)                                         
-                               consequent=self.accel['N'], label='rule N'))
-        
-        self.rules.append(Rule(antecedent=((self.error_v['BN'] & self.error_sum_v['Z'])   | #może trzeba będzie rozbić z deltą: BN, Z, P, BP
-                                           (self.error_v['BN'] & self.error_sum_v['P'])   | #może trzeba będzie rozbić z deltą: BN, P, BP
-                                           (self.error_v['BN'] & self.error_sum_v['BP'])  | #może trzeba będzie rozbić z deltą: BN, Z, P, BP
-                                           (self.error_v['N'] & self.error_sum_v['Z'])    | #może trzeba będzie rozbić z deltą: BN, Z, BP
-                                           (self.error_v['Z'] & self.error_sum_v['Z'])    | #dobrze
-                                           (self.error_v['Z'] & self.error_sum_v['P'])    |  # dobrze
-                                           (self.error_v['P'] & self.error_sum_v['N'])    | #może trzeba będzie rozbić z deltą: BN, Z, BP
-                                           (self.error_v['BP'] & self.error_sum_v['BN'])  | #dobrze
-                                           (self.error_v['BP'] & self.error_sum_v['N'] & self.error_delta_v['Z'])  |
-                                           (self.error_v['BP'] & self.error_sum_v['N'] & self.error_delta_v['P'])),
-                               consequent=self.accel['Z'], label='rule Z'))
-        
-        self.rules.append(Rule(antecedent=((self.error_v['N'] & self.error_sum_v['P'])    | #może trzeba będzie rozbić z deltą: BN, N, Z, BP
-                                           (self.error_v['N'] & self.error_sum_v['BP'])   | #może trzeba będzie rozbić z deltą: BN, BP (?)
-                                           (self.error_v['Z'] & self.error_sum_v['BP'] & self.error_delta_v['BN'])   | #może trzeba będzie rozbić z deltą: BN, Z, P, BP
-                                           (self.error_v['P'] & self.error_sum_v['Z'])    | #dobrze
-                                           (self.error_v['P'] & self.error_sum_v['P'])    | #dobrze
-                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BN']   |
-                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['N']    |
-                                           (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BP']   |
-                                           (self.error_v['P'] & self.error_sum_v['BP'])  |  #dobrze
-                                           (self.error_v['BP'] & self.error_sum_v['P'])     # może trzeba będzie rozbić z deltą: BN, P, BP
-                                           ),
-                               consequent=self.accel['P'], label='rule P'))
-        
-        self.rules.append(Rule(antecedent=((self.error_v['BP'] & self.error_sum_v['Z'])   | #może trzeba będzie rozbić z deltą: BN, N, P, BP
 
-                                           (self.error_v['BP'] & self.error_sum_v['BP'])),  #dobrze
+        self.rules.append(Rule(antecedent=((self.error_v['N'] & self.error_sum_v['N']) |  # na 99% dobrze 
+                                           (self.error_v['Z'] & self.error_sum_v['N']) |  # na 99% dobrze
+                                           (self.error_v['P'] & self.error_sum_v['BN'])),
+                               # może trzeba będzie rozbić z deltą: BN, Z, P, BP (?)                                         
+                               consequent=self.accel['N'], label='rule N'))
+
+        self.rules.append(Rule(antecedent=(
+                (self.error_v['BN'] & self.error_sum_v['Z']) |  # może trzeba będzie rozbić z deltą: BN, Z, P, BP
+                (self.error_v['BN'] & self.error_sum_v['P']) |  # może trzeba będzie rozbić z deltą: BN, P, BP
+                (self.error_v['BN'] & self.error_sum_v['BP']) |  # może trzeba będzie rozbić z deltą: BN, Z, P, BP
+                (self.error_v['N'] & self.error_sum_v['Z']) |  # może trzeba będzie rozbić z deltą: BN, Z, BP
+                (self.error_v['Z'] & self.error_sum_v['Z']) |  # dobrze
+                (self.error_v['Z'] & self.error_sum_v['P']) |  # dobrze
+                (self.error_v['P'] & self.error_sum_v['N']) |  # może trzeba będzie rozbić z deltą: BN, Z, BP
+                (self.error_v['BP'] & self.error_sum_v['BN']) |  # dobrze
+                (self.error_v['BP'] & self.error_sum_v['N'] & self.error_delta_v['Z']) |
+                (self.error_v['BP'] & self.error_sum_v['N'] & self.error_delta_v['P'])),
+                               consequent=self.accel['Z'], label='rule Z'))
+
+        self.rules.append(Rule(
+            antecedent=((self.error_v['N'] & self.error_sum_v['P']) |  # może trzeba będzie rozbić z deltą: BN, N, Z, BP
+                        (self.error_v['N'] & self.error_sum_v['BP']) |  # może trzeba będzie rozbić z deltą: BN, BP (?)
+                        (self.error_v['Z'] & self.error_sum_v['BP'] & self.error_delta_v[
+                            'BN']) |  # może trzeba będzie rozbić z deltą: BN, Z, P, BP
+                        (self.error_v['P'] & self.error_sum_v['Z']) |  # dobrze
+                        (self.error_v['P'] & self.error_sum_v['P']) |  # dobrze
+                        (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BN'] |
+                        (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['N'] |
+                        (self.error_v['BP'] & self.error_sum_v['N']) & self.error_delta_v['BP'] |
+                        (self.error_v['P'] & self.error_sum_v['BP']) |  # dobrze
+                        (self.error_v['BP'] & self.error_sum_v['P'])  # może trzeba będzie rozbić z deltą: BN, P, BP
+                        ),
+            consequent=self.accel['P'], label='rule P'))
+
+        self.rules.append(Rule(antecedent=(
+                (self.error_v['BP'] & self.error_sum_v['Z']) |  # może trzeba będzie rozbić z deltą: BN, N, P, BP
+
+                (self.error_v['BP'] & self.error_sum_v['BP'])),  # dobrze
                                consequent=self.accel['BP'], label='rule BP'))
 
     def update_fuzzy_variables(self) -> None:
@@ -174,47 +188,53 @@ class Vehicle:
             self.simulation.input['error_sum'] = self.si[i]
             self.simulation.input['error_delta'] = self.sd[i]
             self.simulation.compute()
-            
+
             self.dynamics.append(self.simulation.output['acceleration'])
             self.fuzzy_velocity.append(self.fuzzy_velocity[-1] + self.dynamics[-1])
 
     def calc_frontal_area(self) -> None:
         self.frontal_area = round(self.dims[1] * self.dims[2], 2)
 
-    def calc_max_accleration(self) -> None:
+    def calc_max_acceleration(self) -> None:
         self.maximal_acceleration = sqrt((self.horsepower * HORSEPOWER) / (2 * self.mass))
 
     def set_press(self) -> None:
-        weight = self.calc_weight()
-        friction = self.calc_friction()
-        drag = self.calc_drag()
-        #  print(f"weight: {weight}N, friction: {friction}N, drag: {drag}N, total: {weight + friction + drag}N ")
-        driving = self.calc_driving_force(1)
-        #  print(f"driving force: {driving}N")
-        press = (weight + friction + drag) / driving
+        self.calc_weight()
+        self.calc_friction()
+        self.calc_drag()
+        self.calc_driving_force(1)
+        press = (self.weight[-1] + self.friction[-1] + self.air_drag_force[-1]) / self.driving_force[-1]
         #  print(f"press: {press * 100}%")
         self.press.append(self.normalize(press))
 
     def calc_minimal_press(self) -> float:
-        # print(f"minimal press: {(self.calc_weight() + self.calc_friction() + self.calc_drag()) / self.calc_driving_force(1)}")
-        return (self.calc_weight() + self.calc_friction() + self.calc_drag()) / self.calc_driving_force(1)
+        self.calc_weight()
+        self.calc_friction()
+        self.calc_drag()
+        self.calc_driving_force(1)
+        minimal_press = (self.weight[-1] + self.friction[-1] + self.air_drag_force[-1]) / self.driving_force[-1]
+        del self.weight[-1]
+        del self.friction[-1]
+        del self.air_drag_force[-1]
+        del self.driving_force[-1]
+        return minimal_press
 
     def initialize_state(self) -> None:
         self.validate()
         if self.run:
             self.calc_iterations()
             self.calc_frontal_area()
-            self.calc_max_accleration()
+            self.calc_max_acceleration()
             self.time.append(0.0)
-            self.velocity.append(self.minimal_veocity)
-            self.fuzzy_velocity.append(self.minimal_veocity)
+            self.velocity.append(self.minimal_velocity)
+            self.fuzzy_velocity.append(self.minimal_velocity)
             self.set_press()
             self.error.append(self.destined_velocity - self.velocity[-1])
 
     # controller error
     def calc_control(self):
         p = self.error[-1]
-        i = self. sampling_time / self.exceding_time * sum(self.error)
+        i = self.sampling_time / self.exceding_time * sum(self.error)
         d = self.doubling_time / self.sampling_time * (self.error[-1] - self.error[-2])
         self.sp.append(p)
         self.si.append(i)
@@ -222,42 +242,57 @@ class Vehicle:
         # print(f"step: {self.step}, P: {p}, I: {i}, D: {d}")
         self.step += 1
         return self.controler_gain * (p + i + d)
-        
+
     # calculate forces
 
-    def calc_weight(self) -> float:
-        return self.mass * GRAVITY_COEFF * sin(radians(INCLINATION))
+    def calc_weight(self, append=True) -> None:
+        weight = self.mass * GRAVITY_COEFF * sin(radians(INCLINATION))
+        self.weight.append(weight)
 
-    def calc_friction(self) -> float:
-        return self.mass * GRAVITY_COEFF * FRICTION_COEFF * cos(radians(INCLINATION))
+    def calc_friction(self, append=True) -> None:
+        friction = self.mass * GRAVITY_COEFF * FRICTION_COEFF * cos(radians(INCLINATION))
+        self.friction.append(friction)
 
-    def calc_drag(self) -> float:
-        return (DRAG_COEF * AIR_DENSITY * self.frontal_area * self.velocity[-1] ** 2) / 2
+    def calc_drag(self, append=True) -> None:
+        drag = (DRAG_COEF * AIR_DENSITY * self.frontal_area * self.velocity[-1] ** 2) / 2
+        self.air_drag_force.append(drag)
 
-    def calc_driving_force(self, press) -> float:
-        return (HORSEPOWER * self.horsepower * press) / (self.velocity[-1] * self.wheel_radius)
+    def calc_driving_force(self, press, append=True) -> None:
+        driving = (HORSEPOWER * self.horsepower * press) / (self.velocity[-1] * self.wheel_radius)
+        self.driving_force.append(driving)
 
-    def calc_resultant_force(self) -> float:
-        # print(f"rforce: {self.calc_driving_force(self.press[-1]) - (self.calc_weight() + self.calc_friction() + self.calc_drag())}")
-        return self.calc_driving_force(self.press[-1]) - (self.calc_weight() + self.calc_friction() + self.calc_drag())
+    def calc_resultant_force(self, append=True) -> None:
+        self.calc_weight()
+        self.calc_friction()
+        self.calc_drag()
+        self.calc_driving_force(self.press[-1])
+        resultant = self.driving_force[-1] - (self.weight[-1] + self.friction[-1] + self.air_drag_force[-1])
+        self.resultant_force.append(resultant)
 
-    def get_valid_acceleration(self) -> float:
-        # print(f"acel: {max(-self.maximal_acceleration, min(self.calc_resultant_force() / self.mass, self.maximal_acceleration))}")
-        self.acceleration.append(max(-self.maximal_acceleration, min(self.calc_resultant_force() / self.mass, self.maximal_acceleration)))
-        return max(-self.maximal_acceleration, min(self.calc_resultant_force() / self.mass, self.maximal_acceleration))
-    
+    def get_valid_acceleration(self) -> None:
+        self.calc_resultant_force()
+        valid_acceleration = max(-self.maximal_acceleration, min(self.resultant_force[-1] / self.mass, self.maximal_acceleration))
+        self.acceleration.append(valid_acceleration)
+
     def get_plot(self):
         plt.subplot(2, 1, 1)
         plt.plot(self.time, self.sp, label='P')
         plt.plot(self.time, self.si, label='I')
         plt.plot(self.time, self.sd, label='D')
         plt.legend()
-        
+
         plt.subplot(2, 1, 2)
         plt.plot(self.time, self.fuzzy_velocity, label='fuzzy')
         plt.plot(self.time, self.velocity, label='accel')
         plt.legend()
         plt.show()
+
+    def modify_for_plotting(self):
+        self.weight[0] = self.weight[1]
+        self.friction[0] = self.friction[1]
+        self.air_drag_force[0] = self.air_drag_force[1]
+        self.driving_force[0] = self.driving_force[1]
+        self.resultant_force[0] = self.resultant_force[1]
 
     # main loop
     def main_loop(self):
@@ -269,25 +304,27 @@ class Vehicle:
                 self.time.append(round(self.time[-1] + self.sampling_time, 2))
                 self.error.append(self.destined_velocity - self.velocity[-1])
                 self.press.append(self.normalize(self.calc_control() / self.destined_velocity, self.calc_minimal_press()))
-                self.velocity.append(self.get_valid_acceleration() + self.velocity[-1])
+                self.get_valid_acceleration()
+                self.velocity.append(self.acceleration[-1] + self.velocity[-1])
+        self.modify_for_plotting()
         self.initialize_fuzzy_system()
         self.update_fuzzy_variables()
-        
 
 
 if __name__ == "__main__":
     w = Vehicle(1100, [4.06, 1.94, 1.43], 72, 0.28, 72, 20)
     w.main_loop()
     w.get_plot()
-    #f= open("zmienne.txt", "w")
-    #for i in range(len(w.acceleration)):
+    # f= open("zmienne.txt", "w")
+    # for i in range(len(w.acceleration)):
     #    f.write(f"{w.acceleration[i]};{w.sp[i]};{w.si[i]};{w.sd[i]}\n")
-        
-"""     print(f"press: {}")
-    print(f"P: {}")
-    print(f"I: {}")
-    print(f"D: {}") """
-    
+
+    print(f"weight: {w.weight}")
+    print(f"friction: {w.friction}")
+    print(f"drag: {w.air_drag_force}")
+    print(f"driving: {w.driving_force}")
+    print(f"resultant: {w.resultant_force}")
+
 #    print(f"time: {w.time}")
 #    print(f"error: {w.error}")
 #    print(f"press: {w.press}")
