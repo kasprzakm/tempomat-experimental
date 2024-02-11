@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Weight plot
         var plot4a = {
             x: data.x,
-            y: data.y6,
+            y: data.y6.map(value => value / 1000),
             type: 'scatter',
             mode: 'lines',
             name: 'Ciężar',
@@ -305,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Friction plot
         var plot4b = {
             x: data.x,
-            y: data.y7,
+            y: data.y7.map(value => value / 1000),
             type: 'scatter',
             mode: 'lines',
             name: 'Tarcie',
@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Air drag force plot
         var plot4c = {
             x: data.x,
-            y: data.y8,
+            y: data.y8.map(value => value / 1000),
             type: 'scatter',
             mode: 'lines',
             name: 'Siła ciągu powietrza',
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Driving force plot
         var plot4d = {
             x: data.x,
-            y: data.y9,
+            y: data.y9.map(value => value / 1000),
             type: 'scatter',
             mode: 'lines',
             name: 'Siła ciągu silnika',
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Resultant force plot
         var plot4e = {
             x: data.x,
-            y: data.y10,
+            y: data.y10.map(value => value / 1000),
             type: 'scatter',
             mode: 'lines',
             name: 'Siła wypadkowa',
@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function () {
             { traces: plot1Traces, layout: { ...layout, title: 'Prędkość', xaxis: { title: 'czas [s]' }, yaxis: { title: 'prędkość [km/h]' } } },
             { traces: plot2Traces, layout: { ...layout, title: 'Przyspieszenie', xaxis: { title: 'czas [s]' }, yaxis: { title: 'przyspieszenie [m/s^2]' } } },
             { traces: [plot3], layout: { ...layout, title: 'Nacisk na pedał gazu', xaxis: { title: 'czas [s]' }, yaxis: { title: 'poziom nacisku [%]' } } },
-            { traces: plot4Traces, layout: { ...layout, title: 'Siły', xaxis: { title: 'czas [s]' }, yaxis: { title: 'siła [N]' } } },
+            { traces: plot4Traces, layout: { ...layout, title: 'Siły', xaxis: { title: 'czas [s]' }, yaxis: { title: 'siła [kN]' } } },
         ];
     }
 });
