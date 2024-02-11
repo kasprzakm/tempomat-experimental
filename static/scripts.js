@@ -5,10 +5,6 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(data => {
             // Use Plotly to create initial plots
             var plots = createPlots(data);
-            // Plotly.newPlot('plot1', [plots[0]]);
-            // Plotly.newPlot('plot2', [plots[1]]);
-            // Plotly.newPlot('plot3', [plots[2]]);
-            // Plotly.newPlot('plot4', [plots[3]]);
 
             Plotly.newPlot('plot1', plots[0].traces, plots[0].layout);
             Plotly.newPlot('plot2', plots[1].traces, plots[1].layout);
@@ -244,61 +240,113 @@ document.addEventListener('DOMContentLoaded', function () {
     // Function to create Plotly plots based on data
     function createPlots(data) {
         var layout = {
-            // width: 800,
-            //height: 400,
             margin: { l: 50, r: 50, b: 50, t: 50 },
         };
 
-        var plot1 = {
+        // Classic velocity plot
+        var plot1a = {
             x: data.x,
-            y: data.y1,
+            y: data.y1.map(value => value * 3.6),
             type: 'scatter',
-            mode: 'lines',
-            name: 'Error',
-            title: 'Controler Error',
-            xaxis: { title: 'time [s]' },
-            yaxis: { title: 'error [m/s]' },
+            mode: 'lines', name: 'Prędkość klasyczna',
         };
 
-        var plot2 = {
+        // Fuzzy velocity plot
+        var plot1b = {
             x: data.x,
-            y: data.y2.map(value => value * 100),
+            y: data.y2.map(value => value * 3.6),
             type: 'scatter',
             mode: 'lines',
-            name: 'Press',
-            title: 'Gas Pedal Pressure Level',
-            xaxis: { title: 'time [s]' },
-            yaxis: { title: 'press level [%]' },
+            name: 'Prędkość rozmyta',
         };
 
+        // Combined plot1a and plot1b into one variable
+        var plot1Traces = [plot1a, plot1b];
+
+        // Classic acceleration plot
+        var plot2a = {
+            x: data.x,
+            y: data.y3,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Przyspieszenie klasyczne',
+        };
+
+        // Fuzzy acceleration plot
+        var plot2b = {
+            x: data.x,
+            y: data.y4,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Przyspieszenie rozmyte',
+        };
+
+        // Combined plot2a and plot2b into one variable
+        var plot2Traces = [plot2a, plot2b];
+
+        // Pedal press plot
         var plot3 = {
             x: data.x,
-            y: data.y3.map(value => value * 3.6),
+            y: data.y5.map(value => value * 100),
             type: 'scatter',
             mode: 'lines',
-            name: 'Velocity',
-            title: 'Vehicle Velocity',
-            xaxis: { title: 'time [s]' },
-            yaxis: { title: 'velocity [km/h]' },
+            name: 'Nacisk',
         };
 
-        var plot4 = {
+        // Weight plot
+        var plot4a = {
             x: data.x,
-            y: data.y4.map(value => value * 3.6),
+            y: data.y3,
             type: 'scatter',
             mode: 'lines',
-            name: 'Fuzzy',
-            title: 'Controler Fuzzy Logic Levels',
-            xaxis: { title: 'time [s]' },
-            yaxis: { title: 'velocity [km/h]' },
+            name: 'Ciężar',
         };
 
-        // return [plot1, plot2, plot3, plot4];
+        // Friction plot
+        var plot4b = {
+            x: data.x,
+            y: data.y3,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Tarcie',
+        };
+
+        // Air drag force plot
+        var plot4c = {
+            x: data.x,
+            y: data.y3,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Siła ciągu powietrza',
+        };
+
+        // Driving force plot
+        var plot4d = {
+            x: data.x,
+            y: data.y3,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Siła ciągu silnika',
+        };
+
+        // Resultant force plot
+        var plot4e = {
+            x: data.x,
+            y: data.y3,
+            type: 'scatter',
+            mode: 'lines',
+            name: 'Siła wypadkowa',
+            dash: 'dash',
+        };
+
+        // Combined plot4a ... plot4e into one variable
+        var plot4Traces = [plot4a, plot4b, plot4c, plot4d, plot4e];
+
         return [
-            { traces: [plot1], layout: { ...layout, title: 'Controler Error', xaxis: { title: 'time [s]' }, yaxis: { title: 'error [m/s]' } } },
-            { traces: [plot2], layout: { ...layout, title: 'Gas Pedal Pressure Level', xaxis: { title: 'time [s]' }, yaxis: { title: 'press level [%]' } } },
-            { traces: [plot3], layout: { ...layout, title: 'Vehicle Velocity', xaxis: { title: 'time [s]' }, yaxis: { title: 'velocity [km/h]' } } },
-            { traces: [plot4], layout: { ...layout, title: 'Controler Fuzzy Logic Levels', xaxis: { title: 'time [s]' }, yaxis: { title: 'velocity [km/h]' } } },
+            { traces: plot1Traces, layout: { ...layout, title: 'Prędkość', xaxis: { title: 'czas [s]' }, yaxis: { title: 'prędkość [km/h]' } } },
+            { traces: plot2Traces, layout: { ...layout, title: 'Przyspieszenie', xaxis: { title: 'czas [s]' }, yaxis: { title: 'przyspieszenie [m/s^2]' } } },
+            { traces: [plot3], layout: { ...layout, title: 'Nacisk na pedał gazu', xaxis: { title: 'czas [s]' }, yaxis: { title: 'poziom nacisku [%]' } } },
+            { traces: plot4Traces, layout: { ...layout, title: 'Siły', xaxis: { title: 'czas [s]' }, yaxis: { title: 'siła [N]' } } },
         ];
     }
 });

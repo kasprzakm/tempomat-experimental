@@ -36,13 +36,34 @@ def generate_data(horsepower, mass, width, length, height, speed):
 
     # Just checking if module func works...
     print('time samples:', v.time[0], '|', v.time[-1], '|', len(v.time))
-    print('controler error:', v.error[0], '|', v.error[-1], '|', len(v.error))
-    print('press level:', v.press[0], '|', v.press[-1], '|', len(v.press))
+    # print('controler error:', v.error[0], '|', v.error[-1], '|', len(v.error))
     print('velocity:', v.velocity[0], '|', v.velocity[-1], '|', len(v.velocity))
-    print('fuzzy samples:', v.fuzzy_velocity[0], '|', v.velocity[-1], '|', len(v.fuzzy_velocity))
+    print('fuzzy velocity:', v.fuzzy_velocity[0], '|', v.fuzzy_velocity[-1], '|', len(v.fuzzy_velocity))
 
-    return {'x': v.time, 'y1': v.error, 'y2': v.press, 'y3': v.velocity, 'y4': v.fuzzy_velocity}
+    print('acceleration', v.acceleration[0], '|', v.acceleration[-1], '|', len(v.acceleration))
+    print('fuzzy acceleration', v.dynamics[0], '|', v.dynamics[-1], '|', len(v.dynamics))
 
+    print('press level:', v.press[0], '|', v.press[-1], '|', len(v.press))
+
+    print('weight:', v.weight[0], '|', v.weight[-1], '|', len(v.weight))
+    print('friction:', v.friction[0], '|', v.friction[-1], '|', len(v.friction))
+    print('air_drag_force:', v.air_drag_force[0], '|', v.air_drag_force[-1], '|', len(v.air_drag_force))
+    print('driving_force:', v.driving_force[0], '|', v.driving_force[-1], '|', len(v.driving_force))
+    print('reluctant_force:', v.resultant_force[0], '|', v.resultant_force[-1], '|', len(v.resultant_force))
+
+    return dict(
+        x=v.time,
+        y1=v.velocity,
+        y2=v.fuzzy_velocity,
+        y3=v.acceleration,
+        y4=v.dynamics,
+        y5=v.press,
+        y6=v.weight,
+        y7=v.friction,
+        y8=v.air_drag_force,
+        y9=v.driving_force,
+        y10=v.resultant_force
+    )
 
 # Default data initializer
 # initial_data = generate_test_data(**initial_parameters)
