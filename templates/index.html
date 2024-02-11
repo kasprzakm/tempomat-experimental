@@ -9,36 +9,35 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Vehicle Speed Control </br> Simulation</h1>
+    <h1>Symulacja </br> tempomatu samochodowego</h1>
 
     <div class="container">
         <!-- Left Column - Control Panel (Inputs) -->
         <div class="left-column">
             <div id="parameter-inputs">
-                <label for="horsepower">Horsepower:</label>
-                <input type="number" id="horsepower" value="{{ initial_parameters.horsepower }} "placeholder="Enter horsepower">
-                <!-- for some strange reason, the browser does not display the predefined HP value, but the console shows that it is entered properly -->
+                <label for="horsepower">Moc silnika [KM]:</label>
+                <input type="number" id="horsepower" value="{{ initial_parameters.horsepower }}" placeholder="Wprowadź moc silnika pojazdu">
 
-                <label for="mass">Mass:</label>
-                <input type="number" id="mass" value="{{ initial_parameters.mass }}" placeholder="Enter mass">
+                <label for="mass">Mass [kg]:</label>
+                <input type="number" id="mass" value="{{ initial_parameters.mass }}" placeholder="Wprowadź masę pojazdu">
 
-                <label for="length">Length:</label>
-                <input type="number" id="length" value="{{ initial_parameters.length }}" placeholder="Enter length">
+                <label for="length">Długość [m]:</label>
+                <input type="number" id="length" value="{{ initial_parameters.length }}" placeholder="Wprowadź długość pojazdu">
 
-                <label for="width">Width:</label>
-                <input type="number" id="width" value="{{ initial_parameters.width }}" placeholder="Enter width">
+                <label for="width">Szerokość [m]:</label>
+                <input type="number" id="width" value="{{ initial_parameters.width }}" placeholder="Wprowadź szerokość pojazdu">
 
-                <label for="height">Height:</label>
-                <input type="number" id="height" value="{{ initial_parameters.height }}" placeholder="Enter height">
+                <label for="height">Wysokość [m]:</label>
+                <input type="number" id="height" value="{{ initial_parameters.height }}" placeholder="Wprowadź wysokość pojazdu">
 
-                <label for="speed">Speed:</label>
+                <label for="speed">Prędkość [km/h]:</label>
                 <div class="slider-container">
                     <div class="speed-box" id="speed_value">{{ initial_parameters.speed }}</div>
                     <input type="range" class="speed-slider" id="speed" min="30" max="200" value="{{ initial_parameters.speed }}">
                 </div>
 
                 <div>
-                    <button onclick="updateData()">Update</button>
+                    <button onclick="updateData()">Generuj</button>
                 </div>
             </div>
         </div>
